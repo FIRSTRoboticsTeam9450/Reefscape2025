@@ -14,13 +14,14 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
-
+import frc.robot.commands.CoralIntakeCommand;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.CommandSwerveDrivetrain;
+import frc.robot.subsystems.CoralIntakeSubsystem;
 
 public class RobotContainer {
-    private double MaxSpeed = TunerConstants.kSpeedAt12Volts.in(MetersPerSecond); // kSpeedAt12Volts desired top speed
-    private double MaxAngularRate = RotationsPerSecond.of(0.75).in(RadiansPerSecond); // 3/4 of a rotation per second max angular velocity
+    private double MaxSpeed = 0.0;//TunerConstants.kSpeedAt12Volts.in(MetersPerSecond); // kSpeedAt12Volts desired top speed
+    private double MaxAngularRate = 0.0;//RotationsPerSecond.of(0.75).in(RadiansPerSecond); // 3/4 of a rotation per second max angular velocity
 
     /* Setting up bindings for necessary control of the swerve drive platform */
     private final SwerveRequest.FieldCentric drive = new SwerveRequest.FieldCentric()
@@ -31,7 +32,8 @@ public class RobotContainer {
 
     private final Telemetry logger = new Telemetry(MaxSpeed);
 
-    private final CommandXboxController joystick = new CommandXboxController(0);
+    private final CommandXboxController m_driver1 = new CommandXboxController(0);
+    private final CommandXboxController m_driver2 = new CommandXboxController(1);
 
     public final CommandSwerveDrivetrain drivetrain = TunerConstants.createDrivetrain();
 
@@ -45,28 +47,56 @@ public class RobotContainer {
         drivetrain.setDefaultCommand(
             // Drivetrain will execute this command periodically
             drivetrain.applyRequest(() ->
-                drive.withVelocityX(-joystick.getLeftY() * MaxSpeed) // Drive forward with negative Y (forward)
-                    .withVelocityY(-joystick.getLeftX() * MaxSpeed) // Drive left with negative X (left)
-                    .withRotationalRate(-joystick.getRightX() * MaxAngularRate) // Drive counterclockwise with negative X (left)
+                drive.withVelocityX(-m_driver2.getLeftY() * MaxSpeed) // Drive forward with negative Y (forward)
+                    .withVelocityY(-m_driver2.getLeftX() * MaxSpeed) // Drive left with negative X (left)
+                    .withRotationalRate(-m_driver2.getRightX() * MaxAngularRate) // Drive counterclockwise with negative X (left)
             )
         );
 
-        joystick.a().whileTrue(drivetrain.applyRequest(() -> brake));
-        joystick.b().whileTrue(drivetrain.applyRequest(() ->
-            point.withModuleDirection(new Rotation2d(-joystick.getLeftY(), -joystick.getLeftX()))
+        m_driver2.a().whileTrue(drivetrain.applyRequest(() -> brake));
+        m_driver2.b().whileTrue(drivetrain.applyRequest(() ->
+            point.withModuleDirection(new Rotation2d(-m_driver2.getLeftY(), -m_driver2.getLeftX()))
         ));
 
         // Run SysId routines when holding back/start and X/Y.
         // Note that each routine should be run exactly once in a single log.
-        joystick.back().and(joystick.y()).whileTrue(drivetrain.sysIdDynamic(Direction.kForward));
-        joystick.back().and(joystick.x()).whileTrue(drivetrain.sysIdDynamic(Direction.kReverse));
-        joystick.start().and(joystick.y()).whileTrue(drivetrain.sysIdQuasistatic(Direction.kForward));
-        joystick.start().and(joystick.x()).whileTrue(drivetrain.sysIdQuasistatic(Direction.kReverse));
+        m_driver2.back().and(m_driver2.y()).whileTrue(drivetrain.sysIdDynamic(Direction.kForward));
+        m_driver2.back().and(m_driver2.x()).whileTrue(drivetrain.sysIdDynamic(Direction.kReverse));
+        m_driver2.start().and(m_driver2.y()).whileTrue(drivetrain.sysIdQuasistatic(Direction.kForward));
+        m_driver2.start().and(m_driver2.x()).whileTrue(drivetrain.sysIdQuasistatic(Direction.kReverse));
 
         // reset the field-centric heading on left bumper press
-        joystick.leftBumper().onTrue(drivetrain.runOnce(() -> drivetrain.seedFieldCentric()));
+        m_driver2.leftBumper().onTrue(drivetrain.runOnce(() -> drivetrain.seedFieldCentric()));
 
         drivetrain.registerTelemetry(logger::telemeterize);
+
+        /* ----- Coral Intake System ----- */
+
+        CoralIntakeSubsystem CI = CoralIntakeSubsystem.getInstance();
+
+        /*
+         * A = Rotate down
+         * Y = Rotate up
+         * X = Tilt Left
+         * B = Tilt Right
+         */
+
+         double voltage = 0.175;
+        //On trues
+        m_driver1.a().onTrue(new CoralIntakeCommand(voltage, voltage));
+        m_driver1.y().onTrue(new CoralIntakeCommand(-voltage, -voltage));
+        m_driver1.x().onTrue(new CoralIntakeCommand(voltage, -voltage));
+        m_driver1.b().onTrue(new CoralIntakeCommand(-voltage, voltage));
+        // m_driver1.a().onTrue(new CoralIntakeCommand(CI.voltage, CI.voltage));
+        // m_driver1.y().onTrue(new CoralIntakeCommand(-CI.voltage, -CI.voltage));
+        // m_driver1.x().onTrue(new CoralIntakeCommand(CI.voltage, -CI.voltage));
+        // m_driver1.b().onTrue(new CoralIntakeCommand(-CI.voltage, CI.voltage));
+
+        //On Falses
+        m_driver1.a().onFalse(new CoralIntakeCommand(0, 0));
+        m_driver1.y().onFalse(new CoralIntakeCommand(0, 0));
+        m_driver1.x().onFalse(new CoralIntakeCommand(0, 0));
+        m_driver1.b().onFalse(new CoralIntakeCommand(0, 0));
     }
 
     public Command getAutonomousCommand() {
