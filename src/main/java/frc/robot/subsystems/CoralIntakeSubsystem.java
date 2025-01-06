@@ -9,7 +9,6 @@ import com.revrobotics.spark.config.SparkFlexConfig;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
-import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.IntakeIDS;
@@ -20,18 +19,17 @@ public class CoralIntakeSubsystem extends SubsystemBase{
     private static CoralIntakeSubsystem CI;
 
     // PID
-    PIDController PID = new PIDController(0, 0, 0);
+    PIDController PID = new PIDController(0.01, 0, 0);
 
     // Motors
     private SparkFlex leftMotor = new SparkFlex(IntakeIDS.kCoralIntakeLeftMotorID, MotorType.kBrushless);
     private SparkFlex rightMotor = new SparkFlex(IntakeIDS.kCoralIntakeRightMotorID, MotorType.kBrushless);
 
     //Encoders
-    private AbsoluteEncoder rotationEncoder = leftMotor.getAbsoluteEncoder();
-    private AbsoluteEncoder tiltEncoder = rightMotor.getAbsoluteEncoder();
+    private AbsoluteEncoder rollEncoder = leftMotor.getAbsoluteEncoder();
+    private AbsoluteEncoder yawEncoder = rightMotor.getAbsoluteEncoder();
 
     // Variables
-    private double setpoint;
     boolean runPID = false;
     public static double voltage;
 
@@ -43,26 +41,29 @@ public class CoralIntakeSubsystem extends SubsystemBase{
         config.smartCurrentLimit(40);
         leftMotor.configure(config, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
         rightMotor.configure(config, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
+        SmartDashboard.putBoolean("Reefscape/CoralIntake/RunPID?", false);
     }
 
     /* ----- Updaters ----- */
 
-
+    /**
+     * Will update the volts to use calculated by the PID
+     * @param pos current position
+     */
     public void updatePID(double pos) {
-        double voltage = MathUtil.clamp(PID.calculate(pos), -1, 1);
+        double voltage = MathUtil.clamp(PID.calculate(pos), -0.125, 0.125);
         setVoltage(voltage, voltage);
     }
 
     @Override
     public void periodic() {
-        
         runPID = SmartDashboard.getBoolean("Reefscape/CoralIntake/RunPID?", false);
         if (runPID) {
-            updatePID(rotationEncoder.getPosition());
+            updatePID(rollEncoder.getPosition());
         }
         voltage = SmartDashboard.getNumber("Reefscape/CoralIntake/Motor Voltages", 0.0);
-        SmartDashboard.putNumber("Reefscape/CoralIntake/LeftMotor Encode", rotationEncoder.getPosition());
-        SmartDashboard.putNumber("Reefscape/CoralIntake/RightMotor Encode", tiltEncoder.getPosition());
+        SmartDashboard.putNumber("Reefscape/CoralIntake/Roll Encoder Pos",rollEncoder.getPosition());
+        SmartDashboard.putNumber("Reefscape/CoralIntake/Yaw Encoder Pos", yawEncoder.getPosition());
     }
 
     /* ----- Setters & Getters ----- */
@@ -85,8 +86,6 @@ public class CoralIntakeSubsystem extends SubsystemBase{
      * @param rightVoltage voltage to set right motor to
      */
     public void setVoltage(double leftVoltage, double rightVoltage) {
-        System.out.println("Left Motor Volt: " + leftVoltage);
-        System.out.println("Right Motor Volt: " + rightVoltage);
         leftMotor.setVoltage(leftVoltage);
         rightMotor.setVoltage(rightVoltage);
     }
@@ -96,7 +95,7 @@ public class CoralIntakeSubsystem extends SubsystemBase{
      * @param setpoint
      */
     public void setSetpoint(double setpoint) {
-        this.setpoint = setpoint;
+        PID.setSetpoint(setpoint);
     }
 
 

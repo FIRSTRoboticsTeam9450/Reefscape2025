@@ -9,8 +9,12 @@ public class CoralIntakeCommand extends Command{
     private CoralIntakeSubsystem CI = CoralIntakeSubsystem.getInstance();
 
     // Variables
-    double leftVoltage;
-    double rightVoltage;
+    private double leftVoltage;
+    private double rightVoltage;
+    private double setpoint;
+    private boolean runPID = false;
+
+    /* ----- Constructors ----- */
 
     /**
      * Sets both of the motors within the Coral Intake Subsystem to the given voltage
@@ -22,10 +26,26 @@ public class CoralIntakeCommand extends Command{
         this.rightVoltage = rightVoltage;
     }
 
+    /**
+     * Sets the target position of the PID when using it.
+     * @param setpoint target position to go to.
+     */
+    public CoralIntakeCommand(double setpoint) {
+        this.setpoint = setpoint;
+    }
+
+    /* ----- Initialization ----- */
+
     @Override
     public void initialize() {
-        CI.setVoltage(leftVoltage, rightVoltage);
+        if (runPID) {
+            CI.setSetpoint(setpoint);
+        } else {
+            CI.setVoltage(leftVoltage, rightVoltage);
+        }
     }
+
+    /* ----- Finishers ----- */
 
     @Override
     public boolean isFinished() {
