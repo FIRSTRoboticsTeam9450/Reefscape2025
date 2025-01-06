@@ -97,6 +97,12 @@ public class RobotContainer {
         m_driver1.y().onFalse(new CoralIntakeCommand(0, 0));
         m_driver1.x().onFalse(new CoralIntakeCommand(0, 0));
         m_driver1.b().onFalse(new CoralIntakeCommand(0, 0));
+
+        //Coral Intake PID Keybinds
+        // m_driver1.a().onTrue(new CoralIntakeCommand(.3, true));
+        // m_driver1.y().onTrue(new CoralIntakeCommand(.6, true));
+        // m_driver1.x().onTrue(new CoralIntakeCommand(.7, false));
+        // m_driver1.b().onTrue(new CoralIntakeCommand(.55, false));
     }
 
     public Command getAutonomousCommand() {

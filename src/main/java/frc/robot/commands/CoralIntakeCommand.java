@@ -12,7 +12,7 @@ public class CoralIntakeCommand extends Command{
     private double leftVoltage;
     private double rightVoltage;
     private double setpoint;
-    private boolean runPID = false;
+    private boolean rollPID = false;
 
     /* ----- Constructors ----- */
 
@@ -30,16 +30,21 @@ public class CoralIntakeCommand extends Command{
      * Sets the target position of the PID when using it.
      * @param setpoint target position to go to.
      */
-    public CoralIntakeCommand(double setpoint) {
+    public CoralIntakeCommand(double setpoint, boolean rollPID) {
         this.setpoint = setpoint;
+        this.rollPID = rollPID;
     }
 
     /* ----- Initialization ----- */
 
     @Override
     public void initialize() {
-        if (runPID) {
-            CI.setSetpoint(setpoint);
+        if (CI.runPID) {
+            if (rollPID) {
+                CI.setRollSetpoint(setpoint);
+            } else {
+                CI.setYawSetpoint(setpoint);
+            }
         } else {
             CI.setVoltage(leftVoltage, rightVoltage);
         }
